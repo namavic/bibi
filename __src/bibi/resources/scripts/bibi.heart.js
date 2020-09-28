@@ -3275,21 +3275,23 @@ I.KeyObserver = { create: () => { if(!S['use-keys']) return;
             ['keydown', 'keyup', 'keypress'].forEach(EventName => Doc.addEventListener(EventName, KeyObserver['onKey' + sML.capitalise(EventName.replace('key', ''))], false));
         },
         onKeyTouch: (Eve) => {
+            if(KeyObserver.Hot) return;
             if(!Eve.BibiKeyName) return false;
             const KeyParameter = KeyObserver.KeyParameters[!Eve.shiftKey ? Eve.BibiKeyName : Eve.BibiKeyName.toUpperCase()];
             if(!KeyParameter) return false;
-            Eve.preventDefault();
-            switch(typeof KeyParameter) {
+            //Eve.preventDefault();
+            KeyObserver.Hot = true;
+            new Promise((resolve, reject) => { switch(typeof KeyParameter) {
                 case 'number': if(I.Flipper.isAbleToFlip(KeyParameter)) {
                     if(I.Arrows) E.dispatch(I.Arrows[KeyParameter], 'bibi:tapped');
-                    I.Flipper.flip(KeyParameter);
+                    return I.Flipper.flip(KeyParameter).then(resolve);
                 } break;
                 case 'string': switch(KeyParameter) {
-                    case 'head': case 'foot': return R.focusOn({ Destination: KeyParameter, Duration: 0 });
-                    case 'utilities': return I.Utilities.toggleGracefuly();
-                    case 'switch': return I.AxisSwitcher ? I.AxisSwitcher.switchAxis() : false;
+                    case 'head': case 'foot': return R.focusOn({ Destination: KeyParameter, Duration: 0 }).then(resolve);
+                    case 'utilities': return I.Utilities.toggleGracefuly(), resolve();
+                    case 'switch': if(I.AxisSwitcher) return I.AxisSwitcher.switchAxis().then(resolve);
                 } break;
-            }
+            } reject(); }).catch(() => 0).then(() => KeyObserver.Hot = false);
         }
     };
     KeyObserver.updateKeyCodes(['keydown', 'keyup', 'keypress'], {
